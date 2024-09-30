@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package service;
+
+message Command {
+  string command = 1;
+  string data = 2;
+  string from = 3;
+  string requester = 4;
+}
+
+message CommandResponse {
+  string data = 1;
+  string error = 2;
+}
+
+service Service {
+  rpc command(Command) returns (CommandResponse) {}
+}
