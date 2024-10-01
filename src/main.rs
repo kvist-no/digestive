@@ -1,9 +1,10 @@
-use std::env;
-use sentry::cron_monitor::{CronMonitor, CronJobStatus};
+use crate::service::service_client::ServiceClient;
+use crate::service::Command;
 use anyhow::{anyhow, Result};
 use log::{info, warn};
-use crate::service::Command;
-use crate::service::service_client::ServiceClient;
+use sentry::cron_monitor::{CronJobStatus, CronMonitor};
+use std::env;
+use uuid::Uuid;
 
 mod sentry;
 
@@ -22,9 +23,12 @@ async fn main() -> Result<()> {
     let notification_service_url = get_env_var("NOTIFICATION_SERVICE_URL")?;
 
     // Bootstrap out Sentry Cron monitor
+    let check_in_id = Uuid::new_v4().hyphenated().to_string();
+
     let cron_monitor = CronMonitor {
         environment: &environment,
         cron_url: &cron_url,
+        check_in_id: &check_in_id,
     };
 
     match cron_monitor.report(CronJobStatus::InProgress).await {
@@ -73,35 +77,31 @@ async fn main() -> Result<()> {
 }
 
 async fn trigger_digest(notification_service_url: String) -> Result<()> {
-    let mut service_client = ServiceClient::connect(notification_service_url
-        .clone()).await?;
+    let mut service_client = ServiceClient::connect(notification_service_url.clone()).await?;
 
-    let from = get_env_var("COMMAND_FROM")
-        .unwrap_or(String::from(
-            "Kubernetes Debrief Trigger CronJob"
-        ));
+    let from =
+        get_env_var("COMMAND_FROM").unwrap_or(String::from("Kubernetes Debrief Trigger CronJob"));
 
-    let command = get_env_var("COMMAND_COMMAND")
-        .unwrap_or(String::from(
-            "SendDigestEmailsCommand",
-        ));
+    let command = get_env_var("COMMAND_COMMAND").unwrap_or(String::from("SendDigestEmailsCommand"));
 
-    let data = get_env_var("COMMAND_DATA")
-        .unwrap_or(String::from(
-            "{\"template\":\"daily-digest\"}"
-        ));
+    let data =
+        get_env_var("COMMAND_DATA").unwrap_or(String::from("{\"template\":\"daily-digest\"}"));
 
-    let requester = get_env_var("COMMAND_REQUESTER")
-        .unwrap_or(String::from(""));
+    let requester = get_env_var("COMMAND_REQUESTER").unwrap_or(String::from(""));
 
-    info!("Sending gRPC command {} to {}", command, notification_service_url
-        .clone());
-    let response = service_client.command(Command {
-        from,
+    info!(
+        "Sending gRPC command {} to {}",
         command,
-        data,
-        requester,
-    }).await?;
+        notification_service_url.clone()
+    );
+    let response = service_client
+        .command(Command {
+            from,
+            command,
+            data,
+            requester,
+        })
+        .await?;
 
     let backend_response = response.into_inner();
 
@@ -117,6 +117,6 @@ async fn trigger_digest(notification_service_url: String) -> Result<()> {
 fn get_env_var(name: &str) -> Result<String> {
     match env::var(name) {
         Ok(value) => Ok(value),
-        Err(_) => Err(anyhow!("Environment variable {} not set", name))
+        Err(_) => Err(anyhow!("Environment variable {} not set", name)),
     }
 }
