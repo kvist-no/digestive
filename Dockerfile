@@ -1,4 +1,4 @@
-FROM rust:1.79.0 AS builder
+FROM rust:latest AS builder
 WORKDIR /usr/src/digestive
 COPY . .
 RUN apt update && apt install -y protobuf-compiler

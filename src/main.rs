@@ -1,7 +1,7 @@
 use crate::service::service_client::ServiceClient;
-use crate::service::Command;
+use crate::service::CommandRequest;
 use anyhow::{anyhow, Result};
-use log::{info, warn};
+use log::{info, warn, error};
 use sentry::cron_monitor::{CronJobStatus, CronMonitor};
 use std::env;
 use uuid::Uuid;
@@ -9,7 +9,7 @@ use uuid::Uuid;
 mod sentry;
 
 pub mod service {
-    tonic::include_proto!("service");
+    tonic::include_proto!("kvist.v1");
 }
 
 #[tokio::main]
@@ -71,6 +71,7 @@ async fn main() -> Result<()> {
                     )
                 }
             }
+            error!("CronJob failed: {}", error);
             Err(error)
         }
     }
@@ -95,23 +96,20 @@ async fn trigger_digest(notification_service_url: String) -> Result<()> {
         notification_service_url.clone()
     );
     let response = service_client
-        .command(Command {
+        .command(CommandRequest {
             from,
             command,
             data,
             requester,
+            saga: None,
+            correlation: None,
         })
         .await?;
 
     let backend_response = response.into_inner();
 
-    if backend_response.error != "" {
-        warn!("Backend returned error: {}", backend_response.error);
-        Err(anyhow!(backend_response.error))
-    } else {
-        info!("Backend succeeded and returned {}", backend_response.data);
-        Ok(())
-    }
+    info!("Backend succeeded and returned {}", backend_response.data);
+    Ok(())
 }
 
 fn get_env_var(name: &str) -> Result<String> {
