@@ -89,7 +89,11 @@ cargo test
 
 ## Deployment as Kubernetes CronJob
 
-This service is designed to run as a Kubernetes CronJob. Here's an example configuration:
+This service is designed to run as a Kubernetes CronJob.
+
+**Production Usage**: This service is currently deployed in production at [kvist-no/infra](https://github.com/kvist-no/infra/blob/main/kubernetes/backend-tools/digest-trigger-cronjob.yaml#L39).
+
+Here's an example configuration:
 
 ```yaml
 apiVersion: batch/v1
