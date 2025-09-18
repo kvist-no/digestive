@@ -1,11 +1,11 @@
 pub use crate::main::*;
 
 pub mod main {
+    use crate::sentry::cron_monitor::{CronJobStatus, CronMonitor};
     use crate::service::service_client::ServiceClient;
     use crate::service::CommandRequest;
     use anyhow::{anyhow, Result};
     use log::{error, info, warn};
-    use crate::sentry::cron_monitor::{CronJobStatus, CronMonitor};
     use std::env;
     use uuid::Uuid;
 
@@ -76,10 +76,11 @@ pub mod main {
     async fn trigger_digest(notification_service_url: String) -> Result<()> {
         let mut service_client = ServiceClient::connect(notification_service_url.clone()).await?;
 
-        let from =
-            get_env_var("COMMAND_FROM").unwrap_or(String::from("Kubernetes Debrief Trigger CronJob"));
+        let from = get_env_var("COMMAND_FROM")
+            .unwrap_or(String::from("Kubernetes Debrief Trigger CronJob"));
 
-        let command = get_env_var("COMMAND_COMMAND").unwrap_or(String::from("SendDigestEmailsCommand"));
+        let command =
+            get_env_var("COMMAND_COMMAND").unwrap_or(String::from("SendDigestEmailsCommand"));
 
         let data =
             get_env_var("COMMAND_DATA").unwrap_or(String::from("{\"template\":\"daily-digest\"}"));
