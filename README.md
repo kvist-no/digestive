@@ -4,20 +4,12 @@
 
 An app for sending a preconfigured gRPC command to trigger daily email digest generation. Purpose built to be run as a CronJob in a Kubernetes cluster with Sentry monitoring.
 
-## Why Rust?
-
-- I wanted to try it out
-- Low memory and CPU requirements
-- Perhaps not the smartest choice in hindsight, but can easily be rewritten to Node.js or something else
-
 ## How It Works
 
 The service performs these steps:
 1. Reports job start to Sentry for monitoring
-2. Connects to your notification service via gRPC
-3. Sends a command to trigger digest email generation
+2. Connects to your notification service via gRPC and sends a command to trigger digest email generation
 4. Reports success/failure status back to Sentry
-5. Exits cleanly
 
 ## Configuration
 
@@ -27,14 +19,8 @@ Configure the service using these environment variables:
 ```env
 # Which environment we're running in (used for Sentry monitoring)
 ENVIRONMENT=staging
-
-# Sentry Cron monitor URL for status reporting
 CRON_URL=https://oxxxxxxxxxxxxxxxx.ingest.de.sentry.io/api/xxxxxxxxxxxxxxxx/cron/digest-trigger/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/
-
-# The gRPC endpoint of your notification service
 NOTIFICATION_SERVICE_URL=https://notification.init.svc.cluster.local:8080
-
-# Log level
 RUST_LOG=info
 ```
 
@@ -42,13 +28,10 @@ RUST_LOG=info
 ```env
 # Who is sending the command (shown in logs and potentially forwarded)
 COMMAND_FROM="Kubernetes Debrief Trigger CronJob"
-
 # The specific command to send to the notification service
 COMMAND_COMMAND="SendDigestEmailsCommand"
-
 # JSON data payload for the command
 COMMAND_DATA="{\"template\":\"daily-digest\"}"
-
 # Optional requester identifier
 COMMAND_REQUESTER=""
 ```
@@ -65,21 +48,7 @@ brew install protobuf
 ```
 
 ### Build and Run
-```bash
-cargo build
-
-export ENVIRONMENT=development
-export CRON_URL=https://your-sentry-monitor-url
-export NOTIFICATION_SERVICE_URL=http://localhost:50051
-export RUST_LOG=info
-
-cargo run
-```
-
-### Testing
-```bash
-cargo test
-```
+Use `task`. Update `.env.local` to point to your local notification service.
 
 ## Monitoring Your CronJob
 - Check CronJob status: `kubectl get cronjobs`
